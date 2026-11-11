@@ -2,7 +2,7 @@
 'use strict';
 
 const KEY = 'hc-data-v1';
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const BP_TAGS = ['기상 후', '복용 전', '운동 후', '자기 전', '기타'];
@@ -336,7 +336,7 @@ const backHead = (href, title) => '<div class="top-back"><a class="back-btn" hre
 function nav(route) {
   const tabFor = { today: 'today', record: 'record', program: 'program', stats: 'stats', features: 'features', settings: 'features', data: 'features', med: 'features', report: 'stats' };
   const cur = tabFor[route] || 'today';
-  const tabs = [['today', '오늘', IC.home], ['record', '기록', IC.rec], ['program', '운동', IC.run], ['stats', '통계', IC.stats], ['features', '설정', IC.set]];
+  const tabs = [['today', '오늘', IC.home], ['record', '기록', IC.rec], ['stats', '통계', IC.stats], ['program', '운동', IC.run], ['features', '설정', IC.set]];
   return '<nav class="tabs" aria-label="메뉴">' + tabs.map(t => '<a href="#' + t[0] + '" class="' + (cur === t[0] ? 'on' : '') + '"' + (cur === t[0] ? ' aria-current="page"' : '') + '>' + t[2] + t[1] + '</a>').join('') + '</nav>';
 }
 

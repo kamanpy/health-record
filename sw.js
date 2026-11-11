@@ -1,5 +1,5 @@
 /* 오프라인 실행용 서비스 워커: 온라인이면 최신 파일, 오프라인이면 저장해 둔 파일을 씁니다. */
-const CACHE = 'my-health-record-v1.2.0';
+const CACHE = 'my-health-record-v1.2.1';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
