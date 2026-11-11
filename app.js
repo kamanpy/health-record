@@ -2,7 +2,7 @@
 'use strict';
 
 const KEY = 'hc-data-v1';
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const BP_TAGS = ['기상 후', '복용 전', '운동 후', '자기 전', '기타'];
@@ -163,6 +163,37 @@ const IC = {
   chevL: sv('<path d="M15 5l-7 7 7 7"/>', 24),
   chevR: sv('<path d="M9 5l7 7-7 7"/>', 24)
 };
+
+/* ---------- 운동 아이콘 (Tabler Icons, MIT) ---------- */
+const EX_ICONS = {
+  run: { label: '러닝', cat: 'cardio', p: '<path d="M11.007 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M4 17l5 1l.75 -1.5"/><path d="M15 21v-4l-4 -3l1 -6"/><path d="M7 12v-3l5 -1l3 3l3 1"/>' },
+  walk: { label: '걷기', cat: 'cardio', p: '<path d="M12 4a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M7 21l3 -4"/><path d="M16 21l-2 -4l-3 -3l1 -6"/><path d="M6 12l2 -3l4 -1l3 3l3 1"/>' },
+  bike: { label: '자전거', cat: 'cardio', p: '<path d="M2 18a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M16 18a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M12 19v-4l-3 -3l5 -4l2 3h3"/><path d="M13.007 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>' },
+  swim: { label: '수영', cat: 'cardio', p: '<path d="M15 9a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M6 11l4 -2l3.5 3l-1.5 2"/><path d="M3 16.75a2.4 2.4 0 0 0 1 .25a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 1 -.25"/>' },
+  rope: { label: '줄넘기', cat: 'cardio', p: '<path d="M6 14v-6a3 3 0 1 1 6 0v8a3 3 0 0 0 6 0v-6"/><path d="M16 5a2 2 0 0 1 2 -2a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2a2 2 0 0 1 -2 -2l0 -3"/><path d="M4 16a2 2 0 0 1 2 -2a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2a2 2 0 0 1 -2 -2l0 -3"/>' },
+  barbell: { label: '근력(역기)', cat: 'str', p: '<path d="M2 12h1"/><path d="M6 8h-2a1 1 0 0 0 -1 1v6a1 1 0 0 0 1 1h2"/><path d="M6 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1"/><path d="M9 12h6"/><path d="M15 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1"/><path d="M18 8h2a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-2"/><path d="M22 12h-1"/>' },
+  weight: { label: '근력(무게)', cat: 'str', p: '<path d="M9 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M6.835 9h10.33a1 1 0 0 1 .984 .821l1.637 9a1 1 0 0 1 -.984 1.179h-13.604a1 1 0 0 1 -.984 -1.179l1.637 -9a1 1 0 0 1 .984 -.821"/>' },
+  stairs: { label: '계단', cat: 'str', p: '<path d="M22 6h-5v5h-5v5h-5v5h-5"/><path d="M6 10v-7"/><path d="M3 6l3 -3l3 3"/>' },
+  stretch: { label: '스트레칭', cat: 'flex', p: '<path d="M15 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M5 20l5 -.5l1 -2"/><path d="M18 20v-5h-5.5l2.5 -6.5l-5.5 1l1.5 2"/>' },
+  yoga: { label: '요가', cat: 'flex', p: '<path d="M4 20h4l1.5 -3"/><path d="M17 20l-1 -5h-5l1 -7"/><path d="M4 10l4 -1l4 -1l4 1.5l4 1.5"/><path d="M10.007 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>' },
+  etc: { label: '기타', cat: 'etc', p: '<path d="M3 12h4l3 8l4 -16l3 8h4"/>' }
+};
+const ICON_RULES = [
+  [/매달|턱걸이|풀업/, 'barbell'],
+  [/러닝|달리기|조깅|런닝|트레드밀|run/i, 'run'], [/걷기|산책|워킹|등산|walk/i, 'walk'], [/자전거|사이클|스피닝|bike/i, 'bike'],
+  [/수영|아쿠아|swim/i, 'swim'], [/줄넘기/, 'rope'], [/계단/, 'stairs'], [/요가|필라테스/, 'yoga'], [/스트레칭|유연|폼롤러|stretch/i, 'stretch'],
+  [/케틀벨|덤벨|아령|머신/, 'weight'], [/스쿼트|런지|푸시업|팔굽|플랭크|매달|턱걸이|풀업|바벨|역기|데드|벤치|근력|크런치|윗몸|브릿지/, 'barbell']
+];
+function iconKey(it) {
+  if (it.icon && EX_ICONS[it.icon]) return it.icon;
+  const n = it.name || '';
+  for (const r of ICON_RULES) if (r[0].test(n)) return r[1];
+  return 'etc';
+}
+function exIcon(it, done, sm) {
+  const k = iconKey(it), ic = EX_ICONS[k], s = sm ? 19 : 28;
+  return '<span class="exi ' + ic.cat + (done ? ' done' : '') + (sm ? ' sm' : '') + '"><svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ic.p + '</svg>' + (done ? '<span class="chk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>' : '') + '</span>';
+}
 
 /* ---------- 계산 ---------- */
 function programFor(ds) {
@@ -364,7 +395,7 @@ function exCard(ds) {
   let rows = items.map((it, i) => {
     const r = log.items[it.name], isDone = r && r.done;
     const sub = isDone ? resultText(it, r) : goalText(it) + (F('exDetail') ? ' · 눌러서 기록' : ' · 눌러서 완료');
-    return '<button type="button" class="ex-row" data-act="exOpen" data-arg="' + ds + '|' + i + '"><span class="' + (isDone ? 'check-circle sm' : 'ring') + '">' + (isDone ? IC.check : '') + '</span><span class="ex-text"><span class="ex-name">' + esc(itemLabel(it)) + '</span><span class="sub">' + esc(sub) + '</span></span></button>';
+    return '<button type="button" class="ex-row" data-act="exOpen" data-arg="' + ds + '|' + i + '">' + exIcon(it, isDone) + '<span class="ex-text"><span class="ex-name">' + esc(itemLabel(it)) + '</span><span class="sub">' + esc(sub) + '</span></span></button>';
   }).join('');
   let foot = '';
   if (log.skip) foot += '<div class="warn-box"><b>건너뜀 · ' + esc(log.skip) + '</b>' + (log.note ? '<span class="sub">' + esc(log.note) + '</span>' : '') + '</div>';
@@ -436,7 +467,7 @@ function viewProgram() {
     const items = (p.days[d] || []).filter(it => it.name);
     const rest = !items.length;
     return '<div class="day-card' + (rest ? ' rest' : '') + (d === t ? ' today' : '') + '"><span class="day-badge">' + DOW[d] + '</span><div style="flex:1;display:flex;flex-direction:column;gap:6px;padding-top:2px">' +
-      (rest ? '<span class="sub" style="line-height:40px;font-size:1rem">휴식</span>' : items.map(it => '<div class="row-between"><span style="font-size:1.08rem;font-weight:500">' + esc(it.name) + '</span><span class="sub">' + esc(goalText(it)) + '</span></div>').join('')) + '</div></div>';
+      (rest ? '<span class="sub" style="line-height:40px;font-size:1rem">휴식</span>' : items.map(it => '<div class="row-between" style="align-items:center"><span class="row" style="gap:10px">' + exIcon(it, false, true) + '<span style="font-size:1.08rem;font-weight:500">' + esc(it.name) + '</span></span><span class="sub">' + esc(goalText(it)) + '</span></div>').join('')) + '</div></div>';
   }).join('');
   const A = D.settings.alarms;
   h += '<div class="list"><div class="list-row"><span class="grow"><span>전날 미리 알림</span><span class="sub">' + (A.exEve.on ? A.exEve.time : '꺼짐') + '</span></span></div><div class="list-row"><span class="grow"><span>당일 알림</span><span class="sub">' + (A.exDay.on ? A.exDay.time : '꺼짐') + '</span></span><a class="ghost-btn" href="#settings">알림 설정</a></div></div>';
@@ -452,6 +483,7 @@ function viewProgramEdit() {
       items.map((it, i) => '<div class="edit-item"><div class="row"><input class="inp" style="flex:1" type="text" placeholder="운동 이름" data-bind="pe.' + d + '.' + i + '.name" value="' + esc(it.name) + '"><button class="back-btn" data-act="peDel" data-arg="' + d + '|' + i + '" aria-label="삭제">' + IC.trash + '</button></div>' +
         '<div class="row"><select class="inp" style="flex:1" data-change="peMetric" data-arg="' + d + '|' + i + '" aria-label="기록 단위"><option value="min"' + (it.metric === 'min' ? ' selected' : '') + '>시간(분)</option><option value="sec"' + (it.metric === 'sec' ? ' selected' : '') + '>버티기(초)</option><option value="reps"' + (it.metric === 'reps' ? ' selected' : '') + '>횟수(회)</option></select>' +
         '<input class="inp" style="width:6.5rem" type="number" inputmode="numeric" placeholder="목표" aria-label="목표" data-bind="pe.' + d + '.' + i + '.goal" value="' + esc(it.goal == null ? '' : it.goal) + '"></div>' +
+        '<div class="row">' + exIcon(it, false, true) + '<select class="inp" style="flex:1" data-change="peIcon" data-arg="' + d + '|' + i + '" aria-label="아이콘"><option value=""' + (!it.icon ? ' selected' : '') + '>아이콘: 자동 (' + EX_ICONS[iconKey({ name: it.name })].label + ')</option>' + Object.keys(EX_ICONS).map(k => '<option value="' + k + '"' + (it.icon === k ? ' selected' : '') + '>아이콘: ' + EX_ICONS[k].label + '</option>').join('') + '</select></div>' +
         (it.metric === 'reps' ? '<label class="row sub">세트 수<input class="inp" style="width:6.5rem" type="number" inputmode="numeric" data-bind="pe.' + d + '.' + i + '.sets" value="' + esc(it.sets == null ? '' : it.sets) + '"></label>' : '') +
         (it.metric === 'min' ? '<label class="row sub"><input type="checkbox" style="width:22px;height:22px" data-change="peDist" data-arg="' + d + '|' + i + '"' + (it.dist ? ' checked' : '') + '> 거리(km)도 기록</label>' : '') +
         '</div>').join('') +
@@ -820,7 +852,7 @@ const ACT = {
   peCancel: () => { UI.progEdit = null; render(); window.scrollTo(0, 0); },
   peSave: () => {
     const days = {};
-    for (let d = 0; d < 7; d++) days[d] = (UI.progEdit.days[d] || []).map(it => ({ name: String(it.name || '').trim(), metric: it.metric, goal: num(it.goal), sets: it.metric === 'reps' ? num(it.sets) : undefined, dist: it.metric === 'min' ? !!it.dist : undefined })).filter(it => it.name);
+    for (let d = 0; d < 7; d++) days[d] = (UI.progEdit.days[d] || []).map(it => ({ name: String(it.name || '').trim(), metric: it.metric, goal: num(it.goal), sets: it.metric === 'reps' ? num(it.sets) : undefined, dist: it.metric === 'min' ? !!it.dist : undefined, icon: it.icon || undefined })).filter(it => it.name);
     const cur = currentProgram(), t = todayStr();
     if (!F('exVersion') || cur.start === t) cur.days = days;
     else D.programs.push({ id: uid(), start: t, days: days });
@@ -875,6 +907,7 @@ const ACT = {
 };
 const CHANGE = {
   peMetric: el => { const p = el.dataset.arg.split('|'); const it = UI.progEdit.days[p[0]][Number(p[1])]; it.metric = el.value; render(); },
+  peIcon: el => { const p = el.dataset.arg.split('|'); const it = UI.progEdit.days[p[0]][Number(p[1])]; if (el.value) it.icon = el.value; else delete it.icon; render(); },
   peDist: el => { const p = el.dataset.arg.split('|'); UI.progEdit.days[p[0]][Number(p[1])].dist = el.checked; },
   alarmTime: el => { if (el.value) { D.settings.alarms[el.dataset.arg].time = el.value; save(); render(); } },
   nightStart: el => { if (el.value) { D.settings.nightStart = el.value; save(); render(); } },
