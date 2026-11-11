@@ -2,7 +2,7 @@
 'use strict';
 
 const KEY = 'hc-data-v1';
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const BP_TAGS = ['기상 후', '복용 전', '운동 후', '자기 전', '기타'];
@@ -89,9 +89,9 @@ function defaultData() {
     medChanges: [],
     bp: [],
     programs: [{ id: uid(), start: t, days: {
-      1: [{ name: '러닝', metric: 'min', goal: 30, dist: true }, { name: '벽스쿼트', metric: 'sec', goal: null }],
+      1: [{ name: '러닝', metric: 'min', goal: 30, dist: true }, { name: '벽스쿼트', metric: 'sec', goal: 120, sets: 4 }],
       3: [{ name: '러닝', metric: 'min', goal: 30, dist: true }, { name: '매달리기', metric: 'sec', goal: null }],
-      5: [{ name: '러닝', metric: 'min', goal: 30, dist: true }, { name: '벽스쿼트', metric: 'sec', goal: null }, { name: '런지', metric: 'reps', goal: null, sets: null }],
+      5: [{ name: '러닝', metric: 'min', goal: 30, dist: true }, { name: '벽스쿼트', metric: 'sec', goal: 120, sets: 4 }, { name: '런지', metric: 'reps', goal: null, sets: null }],
       6: [{ name: '러닝', metric: 'min', goal: null, dist: true }]
     } }],
     exLog: {},
@@ -288,13 +288,13 @@ function backupDue() {
 function itemLabel(it) { return it.name + (it.metric === 'min' && it.goal ? ' ' + it.goal + '분' : ''); }
 function goalText(it) {
   if (it.metric === 'min') return it.goal ? '목표 ' + it.goal + '분' : '시간 자유';
-  if (it.metric === 'sec') return it.goal ? '목표 ' + it.goal + '초' : '목표 미정';
+  if (it.metric === 'sec') return it.goal ? '목표 ' + it.goal + '초' + (it.sets ? ' × ' + it.sets + '세트' : '') : (it.sets ? it.sets + '세트' : '목표 미정');
   return it.goal ? '목표 ' + it.goal + '회' + (it.sets ? ' × ' + it.sets + '세트' : '') : '목표 미정';
 }
 function resultText(it, r) {
   if (!r) return '';
   if (it.metric === 'min') { const a = []; if (r.v != null) a.push(r.v + '분'); if (r.km != null) a.push(r.km + 'km'); return a.join(' · ') || '완료'; }
-  if (it.metric === 'sec') return r.v != null ? r.v + '초' : '완료';
+  if (it.metric === 'sec') return r.v != null ? r.v + '초' + (r.sets ? ' × ' + r.sets + '세트' : '') : (r.sets ? r.sets + '세트 완료' : '완료');
   return r.v != null ? r.v + '회' + (r.sets ? ' × ' + r.sets + '세트' : '') : '완료';
 }
 
@@ -484,7 +484,7 @@ function viewProgramEdit() {
         '<div class="row"><select class="inp" style="flex:1" data-change="peMetric" data-arg="' + d + '|' + i + '" aria-label="기록 단위"><option value="min"' + (it.metric === 'min' ? ' selected' : '') + '>시간(분)</option><option value="sec"' + (it.metric === 'sec' ? ' selected' : '') + '>버티기(초)</option><option value="reps"' + (it.metric === 'reps' ? ' selected' : '') + '>횟수(회)</option></select>' +
         '<input class="inp" style="width:6.5rem" type="number" inputmode="numeric" placeholder="목표" aria-label="목표" data-bind="pe.' + d + '.' + i + '.goal" value="' + esc(it.goal == null ? '' : it.goal) + '"></div>' +
         '<div class="row">' + exIcon(it, false, true) + '<select class="inp" style="flex:1" data-change="peIcon" data-arg="' + d + '|' + i + '" aria-label="아이콘"><option value=""' + (!it.icon ? ' selected' : '') + '>아이콘: 자동 (' + EX_ICONS[iconKey({ name: it.name })].label + ')</option>' + Object.keys(EX_ICONS).map(k => '<option value="' + k + '"' + (it.icon === k ? ' selected' : '') + '>아이콘: ' + EX_ICONS[k].label + '</option>').join('') + '</select></div>' +
-        (it.metric === 'reps' ? '<label class="row sub">세트 수<input class="inp" style="width:6.5rem" type="number" inputmode="numeric" data-bind="pe.' + d + '.' + i + '.sets" value="' + esc(it.sets == null ? '' : it.sets) + '"></label>' : '') +
+        (it.metric === 'reps' || it.metric === 'sec' ? '<label class="row sub">세트 수<input class="inp" style="width:6.5rem" type="number" inputmode="numeric" data-bind="pe.' + d + '.' + i + '.sets" value="' + esc(it.sets == null ? '' : it.sets) + '"></label>' : '') +
         (it.metric === 'min' ? '<label class="row sub"><input type="checkbox" style="width:22px;height:22px" data-change="peDist" data-arg="' + d + '|' + i + '"' + (it.dist ? ' checked' : '') + '> 거리(km)도 기록</label>' : '') +
         '</div>').join('') +
       '<button class="dash-btn" data-act="peAdd" data-arg="' + d + '">+ 운동 추가</button>');
@@ -718,7 +718,7 @@ function modalHtml() {
     const it = m.item, f = UI.form;
     inner = '<h3>' + esc(it.name) + '</h3><div class="sub">' + fmtKDate(parseYmd(m.ds)) + ' · ' + esc(goalText(it)) + '</div>';
     if (it.metric === 'min') inner += '<div class="grid2"><label class="field">운동 시간 (분)<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label>' + (it.dist ? '<label class="field">거리 (km)<input class="inp num-mid" type="number" inputmode="decimal" step="0.1" data-bind="f.km" value="' + esc(f.km) + '"></label>' : '') + '</div>';
-    if (it.metric === 'sec') inner += '<label class="field">버틴 시간 (초)<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label>';
+    if (it.metric === 'sec') inner += '<div class="grid2"><label class="field">버틴 시간 (초)<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label><label class="field">세트<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.sets" value="' + esc(f.sets) + '"></label></div><span class="sub small">세트마다 버틴 시간이 다르면 평균이나 가장 긴 시간을 적어 주세요.</span>';
     if (it.metric === 'reps') inner += '<div class="grid2"><label class="field">횟수 (회)<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label><label class="field">세트<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.sets" value="' + esc(f.sets) + '"></label></div>';
     inner += '<span class="sub small">숫자는 비워 둬도 완료로 저장돼요.</span><button class="big-btn" data-act="exSave">완료로 저장</button>' + (m.existing ? '<button class="ghost-btn" data-act="exClear">완료 취소</button>' : '') + '<button class="link-btn" data-act="closeModal">닫기</button>';
   } else if (m.type === 'skip') {
@@ -835,7 +835,7 @@ const ACT = {
   },
   exSave: () => {
     const m = UI.modal, l = D.exLog[m.ds] = D.exLog[m.ds] || { items: {}, skip: '' };
-    l.items[m.item.name] = { done: true, v: num(UI.form.v), km: m.item.dist ? num(UI.form.km) : null, sets: m.item.metric === 'reps' ? num(UI.form.sets) : null };
+    l.items[m.item.name] = { done: true, v: num(UI.form.v), km: m.item.dist ? num(UI.form.km) : null, sets: m.item.metric === 'reps' || m.item.metric === 'sec' ? num(UI.form.sets) : null };
     l.skip = ''; save(); UI.modal = null; toast('운동을 기록했어요');
   },
   exClear: () => { const m = UI.modal; if (D.exLog[m.ds]) delete D.exLog[m.ds].items[m.item.name]; save(); closeModal(); },
@@ -852,7 +852,7 @@ const ACT = {
   peCancel: () => { UI.progEdit = null; render(); window.scrollTo(0, 0); },
   peSave: () => {
     const days = {};
-    for (let d = 0; d < 7; d++) days[d] = (UI.progEdit.days[d] || []).map(it => ({ name: String(it.name || '').trim(), metric: it.metric, goal: num(it.goal), sets: it.metric === 'reps' ? num(it.sets) : undefined, dist: it.metric === 'min' ? !!it.dist : undefined, icon: it.icon || undefined })).filter(it => it.name);
+    for (let d = 0; d < 7; d++) days[d] = (UI.progEdit.days[d] || []).map(it => ({ name: String(it.name || '').trim(), metric: it.metric, goal: num(it.goal), sets: it.metric === 'reps' || it.metric === 'sec' ? num(it.sets) : undefined, dist: it.metric === 'min' ? !!it.dist : undefined, icon: it.icon || undefined })).filter(it => it.name);
     const cur = currentProgram(), t = todayStr();
     if (!F('exVersion') || cur.start === t) cur.days = days;
     else D.programs.push({ id: uid(), start: t, days: days });
