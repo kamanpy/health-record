@@ -1,8 +1,8 @@
-/* 내 건강 기록 — 모든 기록은 이 기기의 브라우저 저장공간(localStorage)에만 저장됩니다. */
+/* 건강한강 — 모든 기록은 이 기기의 브라우저 저장공간(localStorage)에만 저장됩니다. */
 'use strict';
 
 const KEY = 'hc-data-v1';
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const BP_TAGS = ['기상 후', '복용 전', '운동 후', '자기 전', '기타'];
@@ -666,7 +666,7 @@ function viewSettings() {
   if (F('bpGoal')) h += '<h2>혈압 목표 (의사와 정한 값)</h2>' + card('<div class="grid2"><label class="field">수축기 목표<input class="inp" type="number" inputmode="numeric" data-change="goal" data-arg="s" value="' + esc(s.bpGoal.s == null ? '' : s.bpGoal.s) + '" placeholder="예: 135"></label><label class="field">이완기 목표<input class="inp" type="number" inputmode="numeric" data-change="goal" data-arg="d" value="' + esc(s.bpGoal.d == null ? '' : s.bpGoal.d) + '" placeholder="예: 85"></label></div><span class="sub small">그래프에 수축기 목표선으로 표시돼요.</span>');
   h += '<a class="list-link" href="#med">약 정보 · 복용 기록 고치기<span aria-hidden="true">›</span></a>';
   h += '<a class="list-link" href="#data">데이터 백업 · 복원 · 삭제<span aria-hidden="true">›</span></a>';
-  h += '<div class="sub small" style="text-align:center">내 건강 기록 v' + APP_VERSION + '</div>';
+  h += '<div class="sub small" style="text-align:center">건강한강 v' + APP_VERSION + '</div>';
   return '<main class="page">' + h + '</main>';
 }
 
@@ -696,7 +696,7 @@ function viewData() {
   let h = backHead('#features', '데이터 관리');
   h += card('<div class="row" style="align-items:flex-start;gap:12px"><span class="check-circle" style="background:var(--soft);color:var(--primary)">' + IC.phone + '</span><span style="display:flex;flex-direction:column;gap:2px"><b style="font-size:1.05rem">기록은 이 기기에만 저장돼요</b><span class="sub">서버나 다른 사람에게 보내지 않아요. 이 브라우저(크롬)의 앱 저장공간에 있어요.</span></span></div><div class="grid3">' + counts.map(c => '<span class="stat-box" style="align-items:center;background:var(--bg)"><b style="font-size:1.3rem">' + c[1] + '</b><span class="sub small">' + c[0] + '</span></span>').join('') + '</div><div class="row-between"><span class="sub">자동 삭제 방지 (영구 저장)</span><span class="chip">' + (UI.persisted == null ? '확인 중' : (UI.persisted ? '켜짐' : '대기 중')) + '</span></div>');
   const since = s.lastBackup ? daysBetween(s.lastBackup, todayStr()) : null;
-  h += '<h2>백업</h2>' + card('<div class="warn-box"><b>' + (s.lastBackup ? '마지막 백업 ' + (since === 0 ? '오늘' : since + '일 전') : '아직 백업한 적이 없어요') + '</b><span class="sub">' + (s.lastBackup ? s.lastBackup : '첫 백업을 해 두세요') + '</span></div><button class="big-btn" data-act="backup">지금 백업하기</button><span class="sub">기기의 <b>다운로드</b> 폴더에 파일로 저장돼요. 예: 건강기록_' + todayStr() + '.json</span><div class="field">백업 알림<div class="seg" role="group" aria-label="백업 알림 주기">' + [[0, '끔'], [14, '2주'], [30, '1달']].map(c => '<button class="' + (s.backupDays === c[0] ? 'on' : '') + '" aria-pressed="' + (s.backupDays === c[0]) + '" data-act="backupCycle" data-arg="' + c[0] + '">' + c[1] + '</button>').join('') + '</div></div>');
+  h += '<h2>백업</h2>' + card('<div class="warn-box"><b>' + (s.lastBackup ? '마지막 백업 ' + (since === 0 ? '오늘' : since + '일 전') : '아직 백업한 적이 없어요') + '</b><span class="sub">' + (s.lastBackup ? s.lastBackup : '첫 백업을 해 두세요') + '</span></div><button class="big-btn" data-act="backup">지금 백업하기</button><span class="sub">기기의 <b>다운로드</b> 폴더에 파일로 저장돼요. 예: 건강한강_' + todayStr() + '.json</span><div class="field">백업 알림<div class="seg" role="group" aria-label="백업 알림 주기">' + [[0, '끔'], [14, '2주'], [30, '1달']].map(c => '<button class="' + (s.backupDays === c[0] ? 'on' : '') + '" aria-pressed="' + (s.backupDays === c[0]) + '" data-act="backupCycle" data-arg="' + c[0] + '">' + c[1] + '</button>').join('') + '</div></div>');
   h += '<h2>복원</h2>' + card('<button class="out-btn" data-act="restorePick">백업 파일 불러오기</button><input type="file" accept=".json,application/json" class="hidden-input" id="restore-file" data-change="restoreFile" tabindex="-1" aria-hidden="true"><span class="sub">새 기기로 옮길 때나 기록이 지워졌을 때 써요. 불러온 뒤 방식을 고를 수 있어요.</span><div class="sub"><b style="color:var(--text)">합치기</b> · 지금 기록은 두고 빠진 것만 추가<br><b style="color:var(--text)">덮어쓰기</b> · 지금 기록을 지우고 백업으로 교체</div>');
   const notes = [
     ['크롬 기록 삭제 때 주의', '“인터넷 사용 기록 삭제”에서 ‘쿠키 및 사이트 데이터’를 체크하면 앱 기록도 지워져요. 방문 기록·캐시만 지우는 건 괜찮아요.'],
@@ -773,7 +773,7 @@ function download(name, text, type) {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 function doBackup() {
-  download('건강기록_' + todayStr() + '.json', JSON.stringify({ app: 'my-health-record', version: APP_VERSION, exportedAt: new Date().toISOString(), data: D }, null, 1), 'application/json');
+  download('건강한강_' + todayStr() + '.json', JSON.stringify({ app: 'my-health-record', version: APP_VERSION, exportedAt: new Date().toISOString(), data: D }, null, 1), 'application/json');
   D.settings.lastBackup = todayStr(); save();
 }
 function csvExport() {
@@ -784,7 +784,7 @@ function csvExport() {
   Object.keys(D.exLog).sort().forEach(d => { const l = D.exLog[d]; Object.keys(l.items || {}).forEach(n => { const r = l.items[n]; if (r && r.done) rows.push(['운동', d, '', n, r.v != null ? r.v : '', r.km != null ? r.km + 'km' : '', r.sets != null ? r.sets + '세트' : '', '']); }); if (l.skip) rows.push(['운동 건너뜀', d, '', l.skip, '', '', '', l.note || '']); });
   D.weight.slice().sort((a, b) => a.date < b.date ? -1 : 1).forEach(w => rows.push(['체중', w.date, '', 'kg', w.kg, '', '', '']));
   D.medChanges.forEach(c => rows.push(['약 변경', c.date, '', c.text, '', '', '', '']));
-  download('건강기록_' + todayStr() + '.csv', '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv');
+  download('건강한강_' + todayStr() + '.csv', '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv');
 }
 function icsExport() {
   const plan = alarmPlan(); if (!plan.length) { toast('켜진 알림이 없어요'); return; }
@@ -801,7 +801,7 @@ function icsExport() {
     if (!x.days) push(x.title, '', x.time, null);
     else x.days.forEach(dw => { const target = x.eve ? (dw + 1) % 7 : dw; const items = (p.days[target] || []).filter(it => it.name).map(itemLabel).join(', '); push(x.title, items, x.time, dw); });
   });
-  download('건강기록_알림.ics', ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//my-health-record//KO', 'X-WR-CALNAME:내 건강 기록', 'CALSCALE:GREGORIAN'].join('\r\n') + '\r\n' + ev.join('\r\n') + '\r\nEND:VCALENDAR\r\n', 'text/calendar');
+  download('건강한강_알림.ics', ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//my-health-record//KO', 'X-WR-CALNAME:건강한강', 'CALSCALE:GREGORIAN'].join('\r\n') + '\r\n' + ev.join('\r\n') + '\r\nEND:VCALENDAR\r\n', 'text/calendar');
 }
 
 /* ---------- 동작 ---------- */
