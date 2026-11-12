@@ -2,7 +2,7 @@
 'use strict';
 
 const KEY = 'hc-data-v1';
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.4.0';
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const BP_TAGS = ['기상 후', '복용 전', '운동 후', '자기 전', '기타'];
@@ -211,7 +211,7 @@ function exLogFor(ds) { return D.exLog[ds] || { items: {}, skip: '' }; }
 function dayExStatus(ds) {
   const items = planFor(ds), log = D.exLog[ds], t = todayStr();
   const done = items.filter(it => log && log.items && log.items[it.name] && log.items[it.name].done).length;
-  if (!items.length) return 'rest';
+  if (!items.length) return log && log.extra && log.extra.length ? 'extra' : 'rest';
   if (done === items.length) return 'full';
   if (done > 0) return 'part';
   if (log && log.skip) return 'skip';
@@ -220,7 +220,7 @@ function dayExStatus(ds) {
 }
 function anyExDone(ds) {
   const log = D.exLog[ds];
-  return !!(log && log.items && Object.values(log.items).some(x => x && x.done));
+  return !!(log && ((log.items && Object.values(log.items).some(x => x && x.done)) || (log.extra && log.extra.length)));
 }
 function medStatus(ds) {
   if (D.medLog[ds]) return 'full';
@@ -261,7 +261,7 @@ function weekExCounts(mon) {
   let planned = 0, full = 0, part = 0;
   for (let i = 0; i < 7; i++) {
     const ds = ymd(addDays(mon, i)); const st = dayExStatus(ds);
-    if (st !== 'rest') planned++;
+    if (st !== 'rest' && st !== 'extra') planned++;
     if (st === 'full') full++; if (st === 'part') part++;
   }
   return { planned, full, part };
@@ -387,9 +387,11 @@ function bpCard() {
   return card('<div class="row-between"><span class="card-title">혈압</span><span class="sub">' + meta + '</span></div>' + mid + '<a class="big-btn" href="#record">' + IC.plus + ' 혈압 기록하기</a>');
 }
 function exCard(ds) {
-  const items = planFor(ds), log = exLogFor(ds);
+  const items = planFor(ds), log = exLogFor(ds), extra = log.extra || [];
+  const addBtn = '<button class="dash-btn" data-act="exAddOpen" data-arg="' + ds + '">+ ' + (items.length ? '다른 운동도 했어요' : '운동 기록하기') + '</button>';
+  const extraRows = extra.map(x => '<button type="button" class="ex-row" data-act="exExtraOpen" data-arg="' + ds + '|' + x.id + '">' + exIcon(x, true) + '<span class="ex-text"><span class="ex-name">' + esc(x.name) + ' <span class="chip" style="font-size:.72rem;padding:2px 8px;vertical-align:2px">추가</span></span><span class="sub">' + esc(resultText(x, x)) + '</span></span></button>').join('');
   if (!items.length) {
-    return card('<div class="row-between"><span class="card-title">오늘 운동</span><a class="sub" href="#program">프로그램</a></div><div class="empty" style="font-size:1.05rem">오늘은 쉬는 날이에요.</div>');
+    return card('<div class="row-between"><span class="card-title">오늘 운동</span>' + (extra.length ? '<span class="sub">' + extra.length + '개 기록</span>' : '<a class="sub" href="#program">프로그램</a>') + '</div>' + (extra.length ? '' : '<div class="empty" style="font-size:1.05rem">오늘은 쉬는 날이에요. 운동했다면 기록해 두세요.</div>') + extraRows + addBtn);
   }
   const done = items.filter(it => log.items[it.name] && log.items[it.name].done).length;
   let rows = items.map((it, i) => {
@@ -400,7 +402,13 @@ function exCard(ds) {
   let foot = '';
   if (log.skip) foot += '<div class="warn-box"><b>건너뜀 · ' + esc(log.skip) + '</b>' + (log.note ? '<span class="sub">' + esc(log.note) + '</span>' : '') + '</div>';
   if (F('exPartial') && done < items.length) foot += '<button class="ghost-btn" data-act="exSkip" data-arg="' + ds + '">' + (log.skip ? '사유 수정' : '오늘 건너뛰기 · 메모') + '</button>';
-  return card('<div class="row-between"><span class="card-title">오늘 운동</span><span class="sub">' + done + ' / ' + items.length + ' 완료</span></div>' + rows + foot);
+  return card('<div class="row-between"><span class="card-title">오늘 운동</span><span class="sub">' + done + ' / ' + items.length + ' 완료</span></div>' + rows + extraRows + foot + addBtn);
+}
+function knownExercises() {
+  const map = {};
+  D.programs.forEach(p => Object.keys(p.days).forEach(k => (p.days[k] || []).forEach(it => { if (it.name) map[it.name] = it; })));
+  Object.keys(D.exLog).forEach(d => (D.exLog[d].extra || []).forEach(x => { if (!map[x.name]) map[x.name] = x; }));
+  return Object.keys(map).map(k => map[k]);
 }
 function weightCard() {
   const w = D.weight.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0];
@@ -522,13 +530,13 @@ function statsWeek() {
     h += card('<div class="row-between"><span class="card-title">혈압약</span><span class="sub">' + (avgT != null ? '평균 ' + pad(Math.floor(avgT / 60)) + ':' + pad(avgT % 60) + ' 복용' : '') + '</span></div><div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap"><span class="stat-num">' + (rate == null ? '–' : rate + '%') + '</span><span class="sub">' + taken.length + ' / ' + elapsed.length + '일 · 늦은 복용 ' + late + '회</span></div><div class="week-grid" style="grid-template-columns:repeat(7,minmax(0,1fr))">' + days.map(d => '<span class="d' + (d === t ? ' today' : '') + '">' + DOW[parseYmd(d).getDay()] + '</span>').join('') + days.map(d => '<span class="dot ' + medStatus(d) + '"></span>').join('') + '</div>');
   }
   const c = weekExCounts(mon);
-  const planned = days.filter(d => planFor(d).length);
+  const planned = days.filter(d => planFor(d).length || (exLogFor(d).extra || []).length);
   let rows = planned.map((d, i) => {
     const st = dayExStatus(d), items = planFor(d), log = exLogFor(d);
     const doneN = items.filter(it => log.items[it.name] && log.items[it.name].done).length;
-    const lab = { full: '완료', part: doneN + '/' + items.length, skip: '건너뜀', miss: '못 함', plan: d === t ? '오늘' : '예정' }[st];
-    const col = st === 'full' ? 'var(--primary)' : (st === 'part' || st === 'skip' || st === 'miss' ? 'var(--accentText)' : 'var(--sub)');
-    return '<div class="row" style="min-height:48px;' + (i < planned.length - 1 ? 'border-bottom:1px solid var(--line)' : '') + '"><span style="width:1.6rem;font-weight:700">' + DOW[parseYmd(d).getDay()] + '</span><span style="flex:1">' + esc(items.map(x => x.name).join(' · ')) + (log.skip ? '<span class="sub small"> · ' + esc(log.skip) + '</span>' : '') + '</span><span style="font-weight:700;color:' + col + '">' + lab + '</span></div>';
+    const lab = { full: '완료', part: doneN + '/' + items.length, skip: '건너뜀', miss: '못 함', plan: d === t ? '오늘' : '예정', extra: '추가 운동' }[st];
+    const col = st === 'full' || st === 'extra' ? 'var(--primary)' : (st === 'part' || st === 'skip' || st === 'miss' ? 'var(--accentText)' : 'var(--sub)');
+    return '<div class="row" style="min-height:48px;' + (i < planned.length - 1 ? 'border-bottom:1px solid var(--line)' : '') + '"><span style="width:1.6rem;font-weight:700">' + DOW[parseYmd(d).getDay()] + '</span><span style="flex:1">' + esc(items.map(x => x.name).concat((log.extra || []).map(x => '+' + x.name)).join(' · ')) + (log.skip ? '<span class="sub small"> · ' + esc(log.skip) + '</span>' : '') + '</span><span style="font-weight:700;color:' + col + '">' + lab + '</span></div>';
   }).join('');
   if (!planned.length) rows = '<div class="empty">이번 주는 계획된 운동이 없어요.</div>';
   const pct = c.planned ? Math.round(c.full / c.planned * 100) : 0;
@@ -552,10 +560,10 @@ function statsMonth() {
     const ds = ymd(new Date(first.getFullYear(), first.getMonth(), n));
     const st = dayExStatus(ds), med = !!D.medLog[ds];
     if (ds <= t && ds >= D.created) { elapsed++; if (med) medDays++; }
-    if (st !== 'rest' && ds <= t) exPlanned++;
+    if (st !== 'rest' && st !== 'extra' && ds <= t) exPlanned++;
     if (st === 'full') exFull++;
     let cls = st === 'rest' ? (ds > t ? 'future' : '') : (st === 'plan' && ds > t ? 'plan' : st);
-    if (st === 'rest' && anyExDone(ds)) cls = 'full';
+    if (st === 'extra') cls = 'full';
     cal += '<span class="cell ' + cls + (med ? ' med' : '') + (ds === t ? ' today' : '') + '">' + n + '<i></i></span>';
   }
   h += card('<span class="card-title">한눈에 보기</span><div class="cal">' + cal + '</div><div class="legend"><span><i class="lg-sq" style="background:var(--primary)"></i>운동 완료</span><span><i class="lg-sq" style="border:2px solid var(--primary);background:var(--soft)"></i>일부</span><span><i class="lg-sq" style="border:2px solid var(--accentText)"></i>못 함</span>' + (F('medCheck') ? '<span><i class="lg-sq" style="width:6px;height:6px;border-radius:3px;background:var(--text)"></i>약 복용</span>' : '') + '</div>');
@@ -585,7 +593,8 @@ function growthCard() {
   const from = ymd(addDays(new Date(), -27));
   const map = {};
   Object.keys(D.exLog).filter(d => d >= from).sort().forEach(d => {
-    const items = D.exLog[d].items || {};
+    const items = Object.assign({}, D.exLog[d].items || {});
+    (D.exLog[d].extra || []).forEach(x => { if (!items[x.name]) items[x.name] = x; });
     Object.keys(items).forEach(name => {
       const r = items[name]; if (!r || !r.done) return;
       const val = r.km != null ? r.km : r.v; if (val == null) return;
@@ -721,6 +730,15 @@ function modalHtml() {
     if (it.metric === 'sec') inner += '<div class="grid2"><label class="field">버틴 시간 (초)<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label><label class="field">세트<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.sets" value="' + esc(f.sets) + '"></label></div><span class="sub small">세트마다 버틴 시간이 다르면 평균이나 가장 긴 시간을 적어 주세요.</span>';
     if (it.metric === 'reps') inner += '<div class="grid2"><label class="field">횟수 (회)<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label><label class="field">세트<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.sets" value="' + esc(f.sets) + '"></label></div>';
     inner += '<span class="sub small">숫자는 비워 둬도 완료로 저장돼요.</span><button class="big-btn" data-act="exSave">완료로 저장</button>' + (m.existing ? '<button class="ghost-btn" data-act="exClear">완료 취소</button>' : '') + '<button class="link-btn" data-act="closeModal">닫기</button>';
+  } else if (m.type === 'exAdd') {
+    const f = UI.form, known = knownExercises();
+    inner = '<h3>' + (m.id ? '추가 운동 수정' : '운동 기록') + '</h3><div class="sub">' + fmtKDate(parseYmd(m.ds)) + '</div>';
+    if (known.length) inner += '<div class="field">운동 고르기<div class="tags">' + known.map((k, i) => '<button type="button" class="tag' + (f.name === k.name ? ' on' : '') + '" data-act="exPick" data-arg="' + i + '">' + esc(k.name) + '</button>').join('') + '</div></div>';
+    inner += '<label class="field">운동 이름<input class="inp" type="text" data-bind="f.name" value="' + esc(f.name) + '" placeholder="예: 걷기, 자전거, 등산"></label>';
+    inner += '<div class="field">기록 단위<div class="seg" role="group" aria-label="기록 단위">' + [['min', '시간(분)'], ['sec', '버티기(초)'], ['reps', '횟수(회)']].map(u => '<button type="button" class="' + (f.metric === u[0] ? 'on' : '') + '" aria-pressed="' + (f.metric === u[0]) + '" data-act="exMetric" data-arg="' + u[0] + '">' + u[1] + '</button>').join('') + '</div></div>';
+    if (f.metric === 'min') inner += '<div class="grid2"><label class="field">운동 시간 (분)<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label><label class="field">거리 (km, 선택)<input class="inp num-mid" type="number" inputmode="decimal" step="0.1" data-bind="f.km" value="' + esc(f.km) + '"></label></div>';
+    else inner += '<div class="grid2"><label class="field">' + (f.metric === 'sec' ? '버틴 시간 (초)' : '횟수 (회)') + '<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.v" value="' + esc(f.v) + '"></label><label class="field">세트<input class="inp num-mid" type="number" inputmode="numeric" data-bind="f.sets" value="' + esc(f.sets) + '"></label></div>';
+    inner += '<span class="sub small">숫자는 비워 둬도 저장돼요. 계획에 없는 운동은 ‘추가’로 표시되고 달성률에는 들어가지 않아요.</span><button class="big-btn" data-act="exAddSave">저장</button>' + (m.id ? '<button class="ghost-btn" data-act="exAddDel">이 기록 지우기</button>' : '') + '<button class="link-btn" data-act="closeModal">닫기</button>';
   } else if (m.type === 'skip') {
     inner = '<h3>오늘 운동 건너뛰기</h3><div class="tags">' + SKIP_REASONS.map(r => '<button class="tag' + (UI.form.reason === r ? ' on' : '') + '" data-act="skipReason" data-arg="' + r + '">' + r + '</button>').join('') + '</div><label class="field">메모 (선택)<input class="inp" type="text" data-bind="f.note" value="' + esc(UI.form.note) + '" placeholder="예: 러닝만 하고 쉼"></label><button class="big-btn" data-act="skipSave">저장</button>' + (exLogFor(m.ds).skip ? '<button class="ghost-btn" data-act="skipClear">건너뜀 취소</button>' : '') + '<button class="link-btn" data-act="closeModal">닫기</button>';
   } else if (m.type === 'weight') {
@@ -781,7 +799,7 @@ function csvExport() {
   const rows = [['구분', '날짜', '시각', '항목', '값1', '값2', '값3', '메모']];
   sortedBp().reverse().forEach(r => { const a = readingAvg(r); rows.push(['혈압', r.ts.slice(0, 10), r.ts.slice(11, 16), r.tag || '', Math.round(a.s), Math.round(a.d), a.p != null ? Math.round(a.p) : '', (r.r.length > 1 ? r.r.length + '회 평균 ' : '') + (r.memo || '')]); });
   Object.keys(D.medLog).sort().forEach(d => rows.push(['복용', d, D.medLog[d].time, D.settings.med.name, '', '', '', '']));
-  Object.keys(D.exLog).sort().forEach(d => { const l = D.exLog[d]; Object.keys(l.items || {}).forEach(n => { const r = l.items[n]; if (r && r.done) rows.push(['운동', d, '', n, r.v != null ? r.v : '', r.km != null ? r.km + 'km' : '', r.sets != null ? r.sets + '세트' : '', '']); }); if (l.skip) rows.push(['운동 건너뜀', d, '', l.skip, '', '', '', l.note || '']); });
+  Object.keys(D.exLog).sort().forEach(d => { const l = D.exLog[d]; Object.keys(l.items || {}).forEach(n => { const r = l.items[n]; if (r && r.done) rows.push(['운동', d, '', n, r.v != null ? r.v : '', r.km != null ? r.km + 'km' : '', r.sets != null ? r.sets + '세트' : '', '']); }); (l.extra || []).forEach(x => rows.push(['운동(추가)', d, '', x.name, x.v != null ? x.v : '', x.km != null ? x.km + 'km' : '', x.sets != null ? x.sets + '세트' : '', ''])); if (l.skip) rows.push(['운동 건너뜀', d, '', l.skip, '', '', '', l.note || '']); });
   D.weight.slice().sort((a, b) => a.date < b.date ? -1 : 1).forEach(w => rows.push(['체중', w.date, '', 'kg', w.kg, '', '', '']));
   D.medChanges.forEach(c => rows.push(['약 변경', c.date, '', c.text, '', '', '', '']));
   download('건강한강_' + todayStr() + '.csv', '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv');
@@ -839,6 +857,33 @@ const ACT = {
     l.skip = ''; save(); UI.modal = null; toast('운동을 기록했어요');
   },
   exClear: () => { const m = UI.modal; if (D.exLog[m.ds]) delete D.exLog[m.ds].items[m.item.name]; save(); closeModal(); },
+  exAddOpen: a => { UI.form = { name: '', metric: 'min', v: '', km: '', sets: '', icon: '' }; openModal({ type: 'exAdd', ds: a }); },
+  exExtraOpen: a => {
+    const p = a.split('|'), x = (exLogFor(p[0]).extra || []).find(e => e.id === p[1]); if (!x) return;
+    UI.form = { name: x.name, metric: x.metric, v: x.v == null ? '' : x.v, km: x.km == null ? '' : x.km, sets: x.sets == null ? '' : x.sets, icon: x.icon || '' };
+    openModal({ type: 'exAdd', ds: p[0], id: x.id });
+  },
+  exPick: a => {
+    const k = knownExercises()[Number(a)]; if (!k) return;
+    const f = UI.form; f.name = k.name; f.metric = k.metric || 'min'; f.icon = k.icon || '';
+    if (f.v === '' && k.goal != null) f.v = k.goal;
+    if (f.sets === '' && k.sets != null) f.sets = k.sets;
+    render();
+  },
+  exMetric: a => { UI.form.metric = a; render(); },
+  exAddSave: () => {
+    const f = UI.form, m = UI.modal, name = String(f.name || '').trim();
+    if (!name) { toast('운동 이름을 입력하거나 골라 주세요'); return; }
+    const l = D.exLog[m.ds] = D.exLog[m.ds] || { items: {}, skip: '' };
+    l.extra = l.extra || [];
+    const rec = { id: m.id || uid(), name: name, metric: f.metric, done: true, v: num(f.v), km: f.metric === 'min' ? num(f.km) : null, sets: f.metric !== 'min' ? num(f.sets) : null };
+    if (f.metric === 'min') rec.dist = true;
+    if (f.icon) rec.icon = f.icon;
+    const i = l.extra.findIndex(e => e.id === rec.id);
+    if (i >= 0) l.extra[i] = rec; else l.extra.push(rec);
+    save(); UI.modal = null; toast('운동을 기록했어요');
+  },
+  exAddDel: () => { const m = UI.modal, l = D.exLog[m.ds]; if (l && l.extra) l.extra = l.extra.filter(e => e.id !== m.id); save(); closeModal(); },
   exSkip: a => { const l = exLogFor(a); UI.form = { reason: l.skip || '', note: l.note || '' }; openModal({ type: 'skip', ds: a }); },
   skipReason: a => { UI.form.reason = a; render(); },
   skipSave: () => { if (!UI.form.reason) { toast('사유를 골라 주세요'); return; } const ds = UI.modal.ds, l = D.exLog[ds] = D.exLog[ds] || { items: {}, skip: '' }; l.skip = UI.form.reason; l.note = (UI.form.note || '').trim(); save(); closeModal(); },

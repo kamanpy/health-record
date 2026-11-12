@@ -108,7 +108,7 @@ nav.tabs a.on{color:var(--primary);font-weight:700}
 .dot.empty{border:2px solid var(--line)}
 .dot.miss{border:2px solid var(--accentText)}
 .sq{width:18px;height:18px;border-radius:5px}
-.sq.full{background:var(--primary)}
+.sq.full,.sq.extra{background:var(--primary)}
 .sq.part{background:var(--soft);border:2.5px solid var(--primary)}
 .sq.plan{border:2.5px solid var(--ring)}
 .sq.miss,.sq.skip{border:2px solid var(--accentText)}
@@ -118,7 +118,7 @@ nav.tabs a.on{color:var(--primary);font-weight:700}
 .cell{height:46px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:.92rem}
 .cell i{width:6px;height:6px;border-radius:50%;background:currentColor;visibility:hidden}
 .cell.med i{visibility:visible}
-.cell.full{background:var(--primary);color:var(--on);font-weight:700}
+.cell.full,.cell.extra{background:var(--primary);color:var(--on);font-weight:700}
 .cell.part{background:var(--soft);border:2px solid var(--primary);color:var(--primary);font-weight:700}
 .cell.miss,.cell.skip{border:2px solid var(--accentText)}
 .cell.plan{border:1px dashed var(--ring);color:var(--sub)}
