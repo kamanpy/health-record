@@ -2,7 +2,7 @@
 'use strict';
 
 const KEY = 'hc-data-v1';
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const BP_TAGS = ['기상 후', '복용 전', '운동 후', '자기 전', '기타'];
@@ -26,7 +26,7 @@ const FEATURE_DEFS = [
     ['bpTag', '측정 상황 태그', '기상 후 · 복용 전 · 운동 후 · 자기 전'],
     ['bpAvg', '연속 측정 평균', '2회 측정하면 평균 자동 계산'],
     ['bpGoal', '목표 범위선', '의사와 정한 목표를 그래프에 표시'],
-    ['bpReport', '진료용 요약', '최근 4주 요약 · PDF 저장']
+    ['bpReport', '진료용 요약', '최근 4주 · 월별 요약 · PDF 저장']
   ] },
   { group: '운동', items: [
     ['exDetail', '항목별 상세 기록', '시간 · 거리 · 초 · 횟수'],
@@ -139,7 +139,7 @@ const UI = {
   statsView: 'week', weekOff: 0, monthOff: 0,
   bp: null, progEdit: null, showVersions: false,
   modal: null, form: {}, toast: null, persisted: null,
-  backupCycleDraft: null, restoreData: null
+  backupCycleDraft: null, restoreData: null, reportMode: 'recent', reportMonthOff: 0
 };
 function newBpDraft() {
   const h = new Date().getHours();
@@ -323,7 +323,7 @@ function lineChart(o) {
     flush();
   });
   const every = n > 8 ? Math.ceil(n / 6) : 1;
-  o.labels.forEach((l, i) => { if (i % every === 0 || i === n - 1) g += '<text class="axis" x="' + x(i) + '" y="' + (h - 6) + '" text-anchor="middle">' + esc(l) + '</text>'; });
+  o.labels.forEach((l, i) => { if (i % every === 0 || i === n - 1) g += '<text class="axis" x="' + x(i) + '" y="' + (h - 6) + '" text-anchor="' + (n > 7 && i === n - 1 ? 'end' : (n > 7 && i === 0 ? 'start' : 'middle')) + '">' + esc(l) + '</text>'; });
   return '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + esc(o.label || '추이 그래프') + '">' + g + '</svg>';
 }
 const legend2 = (a, b) => '<div class="legend"><span><i class="lg-line"></i>' + a + '</span><span><i class="lg-dash"></i>' + b + '</span></div>';
@@ -509,7 +509,7 @@ function viewStats() {
   if (F('exDetail')) h += growthCard();
   if (F('weight')) h += weightStats();
   if (F('mixStreak')) h += '<div class="grid2"><div class="stat-box"><span class="v" style="color:var(--primary)">' + medStreak() + '일</span><span class="sub">복용 연속</span></div><div class="stat-box accent"><span class="v" style="color:var(--accentText)">' + exWeekStreak() + '주</span><span class="sub">운동 목표 연속 달성</span></div></div>';
-  if (F('bpReport')) h += '<a class="big-btn" href="#report">진료용 요약 보기 (최근 4주)</a>';
+  if (F('bpReport')) h += '<a class="big-btn" href="#report">진료용 요약 보기 (최근 4주 · 월별)</a>';
   if (F('mixExport')) h += '<button class="out-btn" data-act="csv">엑셀(CSV)로 내보내기</button>';
   return '<main class="page">' + h + '</main>';
 }
@@ -615,21 +615,32 @@ function weightStats() {
 }
 
 /* ---------- 진료용 요약 ---------- */
+function reportRange() {
+  const now = new Date();
+  if (UI.reportMode === 'month') {
+    const first = new Date(now.getFullYear(), now.getMonth() + UI.reportMonthOff, 1);
+    const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+    return { fromD: first, toD: last > now ? now : last, label: first.getFullYear() + '년 ' + (first.getMonth() + 1) + '월' + (last > now ? ' (진행 중)' : '') };
+  }
+  return { fromD: addDays(now, -27), toD: now, label: '최근 4주' };
+}
 function viewReport() {
-  const to = todayStr(), fromD = addDays(new Date(), -27), from = ymd(fromD);
+  const R = reportRange(), fromD = R.fromD, from = ymd(fromD), to = ymd(R.toD), N = daysBetween(from, to) + 1;
   const rs = bpInRange(from, to).sort((a, b) => a.ts < b.ts ? -1 : 1);
   const am = avgOf(rs.filter(r => slotOf(r) === 'am')), pm = avgOf(rs.filter(r => slotOf(r) === 'pm')), all = avgOf(rs);
   const avgs = rs.map(readingAvg);
   const hi = avgs.length ? avgs.reduce((m, a) => a.s > m.s ? a : m) : null, lo = avgs.length ? avgs.reduce((m, a) => a.s < m.s ? a : m) : null;
   let taken = 0, elapsed = 0;
-  for (let i = 0; i < 28; i++) { const d = ymd(addDays(fromD, i)); if (d >= D.created) { elapsed++; if (D.medLog[d]) taken++; } }
-  const days = []; for (let i = 0; i < 28; i++) days.push(ymd(addDays(fromD, i)));
+  for (let i = 0; i < N; i++) { const d = ymd(addDays(fromD, i)); if (d >= D.created) { elapsed++; if (D.medLog[d]) taken++; } }
+  const days = []; for (let i = 0; i < N; i++) days.push(ymd(addDays(fromD, i)));
   const ser = s => days.map(d => { const a = avgOf(rs.filter(r => r.ts.slice(0, 10) === d && slotOf(r) === s)); return a ? Math.round(a.s) : null; });
   const fmt = a => a ? r0(a.s) + ' / ' + r0(a.d) + (a.p != null ? ' · 맥박 ' + r0(a.p) : '') : '–';
   const m = D.settings.med;
   let h = '<div class="top no-print"><div class="top-back"><a class="back-btn" href="#stats" aria-label="뒤로">' + IC.back + '</a><h1>진료용 요약</h1></div></div>';
-  h += '<div><h1 style="font-size:1.5rem">혈압 기록 요약</h1><div class="sub">' + fmtMD(fromD) + ' – ' + fmtMD(new Date()) + ' (최근 4주) · 작성 ' + to + '</div></div>';
-  h += card('<span class="card-title">혈압 평균 (mmHg)</span><div class="grid2"><div class="stat-box"><span class="sub">아침</span><span class="v">' + fmt(am) + '</span><span class="sub small">' + (am ? am.n : 0) + '회</span></div><div class="stat-box"><span class="sub">저녁</span><span class="v">' + fmt(pm) + '</span><span class="sub small">' + (pm ? pm.n : 0) + '회</span></div></div><div class="sub">전체 ' + rs.length + '회 평균 ' + fmt(all) + (hi ? ' · 최고 ' + r0(hi.s) + '/' + r0(hi.d) + ' · 최저 ' + r0(lo.s) + '/' + r0(lo.d) : '') + '</div>' + lineChart({ labels: days.map(d => { const x = parseYmd(d); return (x.getMonth() + 1) + '/' + x.getDate(); }), series: [{ data: ser('am') }, { data: ser('pm') }], goal: F('bpGoal') ? D.settings.bpGoal.s : null, label: '최근 4주 아침 저녁 수축기 혈압' }) + legend2('아침 (수축기)', '저녁 (수축기)'));
+  h += '<div class="seg no-print" role="group" aria-label="기간"><button class="' + (UI.reportMode !== 'month' ? 'on' : '') + '" aria-pressed="' + (UI.reportMode !== 'month') + '" data-act="reportMode" data-arg="recent">최근 4주</button><button class="' + (UI.reportMode === 'month' ? 'on' : '') + '" aria-pressed="' + (UI.reportMode === 'month') + '" data-act="reportMode" data-arg="month">월별</button></div>';
+  if (UI.reportMode === 'month') h += '<div class="no-print">' + navRow('reportMonth', R.label.replace(' (진행 중)', ''), UI.reportMonthOff < 0) + '</div>';
+  h += '<div><h1 style="font-size:1.5rem">혈압 기록 요약 · ' + R.label + '</h1><div class="sub">' + fmtMD(fromD) + ' – ' + fmtMD(R.toD) + ' (' + N + '일) · 작성 ' + todayStr() + '</div></div>';
+  h += card('<span class="card-title">혈압 평균 (mmHg)</span><div class="grid2"><div class="stat-box"><span class="sub">아침</span><span class="v">' + fmt(am) + '</span><span class="sub small">' + (am ? am.n : 0) + '회</span></div><div class="stat-box"><span class="sub">저녁</span><span class="v">' + fmt(pm) + '</span><span class="sub small">' + (pm ? pm.n : 0) + '회</span></div></div><div class="sub">전체 ' + rs.length + '회 평균 ' + fmt(all) + (hi ? ' · 최고 ' + r0(hi.s) + '/' + r0(hi.d) + ' · 최저 ' + r0(lo.s) + '/' + r0(lo.d) : '') + '</div>' + lineChart({ labels: days.map(d => { const x = parseYmd(d); return (x.getMonth() + 1) + '/' + x.getDate(); }), series: [{ data: ser('am') }, { data: ser('pm') }], goal: F('bpGoal') ? D.settings.bpGoal.s : null, label: R.label + ' 아침 저녁 수축기 혈압' }) + legend2('아침 (수축기)', '저녁 (수축기)'));
   h += card('<span class="card-title">복약</span><div>' + esc(m.name) + (m.dose ? ' · ' + esc(m.dose) : '') + ' · 복용 시간 ' + m.start + '–' + m.end + '</div><div>복용률 <b>' + (elapsed ? Math.round(taken / elapsed * 100) : 0) + '%</b> (' + taken + ' / ' + elapsed + '일)</div>' + (F('medHistory') && D.medChanges.length ? '<div class="sub">약 변경: ' + D.medChanges.slice().sort((a, b) => a.date < b.date ? -1 : 1).map(c => c.date + ' ' + esc(c.text)).join(' / ') + '</div>' : ''));
   h += card('<span class="card-title">측정 기록</span>' + (rs.length ? '<table class="rep"><thead><tr><th>날짜·시각</th><th>상황</th><th>혈압</th><th>맥박</th></tr></thead><tbody>' + rs.map(r => { const a = readingAvg(r); return '<tr><td>' + r.ts.slice(5, 10).replace('-', '/') + ' ' + r.ts.slice(11, 16) + '</td><td>' + esc(r.tag || '') + '</td><td><b>' + r0(a.s) + '/' + r0(a.d) + '</b>' + (r.r.length > 1 ? ' (' + r.r.length + '회 평균)' : '') + '</td><td>' + (a.p != null ? r0(a.p) : '') + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="empty">이 기간에 기록이 없어요.</div>'));
   h += '<button class="big-btn no-print" data-act="print">PDF로 저장 · 인쇄</button><div class="sub small no-print">인쇄 화면에서 프린터를 ‘PDF로 저장’으로 고르면 파일로 저장돼요.</div>';
@@ -908,6 +919,8 @@ const ACT = {
   monthNav: a => { UI.monthOff = Math.min(0, UI.monthOff + Number(a)); render(); },
   csv: () => { csvExport(); toast('다운로드 폴더에 저장했어요'); },
   print: () => window.print(),
+  reportMode: a => { UI.reportMode = a; if (a === 'month') UI.reportMonthOff = 0; render(); },
+  reportMonth: a => { UI.reportMonthOff = Math.min(0, UI.reportMonthOff + Number(a)); render(); },
   feat: a => { D.settings.features[a] = !D.settings.features[a]; save(); render(); },
   alarmToggle: a => { D.settings.alarms[a].on = !D.settings.alarms[a].on; save(); render(); },
   ics: () => { icsExport(); toast('캘린더 파일을 저장했어요'); },
