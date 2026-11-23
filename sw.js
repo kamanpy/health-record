@@ -1,5 +1,5 @@
 /* 오프라인 실행용 서비스 워커: 온라인이면 최신 파일, 오프라인이면 저장해 둔 파일을 씁니다. */
-const CACHE = 'my-health-record-v1.5.0';
+const CACHE = 'my-health-record-v1.5.1';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -12,7 +12,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(
-    fetch(req).then(res => {
+    fetch(req.url, { cache: 'no-cache' }).then(res => {
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))

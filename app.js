@@ -2,7 +2,7 @@
 'use strict';
 
 const KEY = 'hc-data-v1';
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const BP_TAGS = ['기상 후', '복용 전', '운동 후', '자기 전', '기타'];
